@@ -55,40 +55,42 @@ def initialize_database():
 
 def parse_and_insert_data(conn, year, ocr_text):
     """
-    Parses the OCR text for dates, winning numbers, and additional information,
-    then inserts them into the respective tables.
+    Parses the OCR text for dates, winning numbers, drawing numbers, and additional information,
+    then inserts them into the respective tables if they don't already exist.
     """
     c = conn.cursor()
 
-    # Regular expression to match the pattern in the provided example
-    pattern = r"(So|Mi) (\d{2}\.\d{2}\.\d{4}) \| ([\d ]+) (\d{2}) Jackpot ([\d ,.]+)"
+    # Adjusted pattern to capture the drawing number at the end
+    pattern = r"(So|Mi) (\d{2}\.\d{2}\.\d{4}) \| ([\d ]+) (\d{2}) Jackpot ([\d ,.]+) \| (\d+)"
     matches = re.findall(pattern, ocr_text.replace('\n', ' '))
 
     for match in matches:
-        # Extracting data from each match
-        drawing_date, numbers_str, additional_number, jackpot = match[1], match[2], match[3], match[4]
-
-        # Splitting the numbers and converting them to integers
+        drawing_date, numbers_str, additional_number, jackpot, drawingNr = match[1], match[2], match[3], match[4], match[5]
         numbers = [int(n) for n in numbers_str.split()]
 
-        # Insert into date_of_drawing
-        c.execute("INSERT INTO date_of_drawing (dateDrawing, drawingNr) VALUES (?, ?)", (drawing_date, 1))
-        date_id = c.lastrowid
+        # Use the actual drawingNr from OCR text
+        c.execute("SELECT id FROM date_of_drawing WHERE dateDrawing = ? AND drawingNr = ?", (drawing_date, drawingNr))
+        existing_entry = c.fetchone()
 
-        # Assuming n1 to n6 are the main numbers and 'additional_number' is the extra number
-        if len(numbers) == 6:
-            n1, n2, n3, n4, n5, n6 = numbers
-            c.execute('''
-            INSERT INTO winningCombination 
-            (n1, n2, n3, n4, n5, n6, additional_number, date_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (n1, n2, n3, n4, n5, n6, additional_number, date_id))
+        if not existing_entry:
+            # Insert into date_of_drawing since it does not exist
+            c.execute("INSERT INTO date_of_drawing (dateDrawing, drawingNr) VALUES (?, ?)", (drawing_date, drawingNr))
+            date_id = c.lastrowid
 
-        # Insert into jocker table if needed
-        # Example: Assuming 'winningCombination' is a placeholder for jocker-related data
-        # You might need to adjust this part according to your actual schema and data
-        jocker_number = "Placeholder"  # Replace or remove based on actual use-case
-        c.execute("INSERT INTO jocker (winningCombination, date_id) VALUES (?, ?)", (jocker_number, date_id))
+            if len(numbers) == 6:
+                n1, n2, n3, n4, n5, n6 = numbers
+                c.execute('''
+                INSERT INTO winningCombination 
+                (n1, n2, n3, n4, n5, n6, additional_number, date_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (n1, n2, n3, n4, n5, n6, additional_number, date_id))
+
+            # Insert into jocker table if needed
+            # Placeholder for jocker insertion
+            jocker_number = "Placeholder"  # Adjust as needed based on actual data or remove if not applicable
+            c.execute("INSERT INTO jocker (winningCombination, date_id) VALUES (?, ?)", (jocker_number, date_id))
+        else:
+            print(f"Skipping existing entry for {drawing_date} with drawing number {drawingNr}.")
 
     conn.commit()
 
@@ -96,6 +98,7 @@ def insert_ocr_result(conn, year, ocr_text):
     c = conn.cursor()
     c.execute("INSERT INTO ocr_results (year, ocr_text) VALUES (?, ?)", (year, ocr_text))
     conn.commit()
+
 
 def process_images_for_year(conn, year, base_url, base_image_url):
     url = base_url.format(year)
@@ -123,7 +126,7 @@ def process_images_for_year(conn, year, base_url, base_image_url):
                     # Parse the OCR text and insert parsed data into related tables
                     parse_and_insert_data(conn, year, extracted_text)
 
-                    print(f"Year {year}: {extracted_text}")
+                    #print(f"Year {year}: {extracted_text}")
                 else:
                     print(f"Failed to download image for year {year}")
     else:
@@ -152,11 +155,24 @@ def display_winning_combinations_for_march(conn):
     else:
         print("No winning combinations found for March.")
 
-# Usage example:
-# conn = sqlite3.connect('lottery_ocr_results.db')
-# display_winning_combinations_for_march(conn)
-# conn.close()
-
+def display_winning_comb(conn):
+    print("in display...")
+    c = conn.cursor()
+    # Query to join date_of_drawing and winningCombination tables to get March records
+    query = """
+    SELECT w.n1, w.n2, w.n3, w.n4, w.n5, w.n6, w.additional_number
+    FROM winningCombination w
+    """
+    c.execute(query)
+    results = c.fetchall()
+    
+    if results:
+        print("Winning combinations:")
+        for row in results:
+            n1, n2, n3, n4, n5, n6, additional_number = row
+            print(f"Numbers: {n1}, {n2}, {n3}, {n4}, {n5}, {n6}, Additional: {additional_number}")
+    else:
+        print("No winning combinations found for March.")
 
 
 def main():
@@ -171,6 +187,10 @@ def main():
 
     for year in range(start_year, end_year + 1):
         process_images_for_year(conn, year, base_url, base_image_url)
+
+    display_winning_combinations_for_march(conn)
+
+    display_winning_comb(conn)
 
     conn.close()
 
