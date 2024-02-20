@@ -67,15 +67,7 @@ def parse_and_insert_data(conn, year, ocr_text):
 
     for match in matches:
         day_of_week, drawing_date, numbers_str, additional_number, jackpot, drawingNr = match
-        print(day_of_week)
-        print(drawing_date)
-        print(numbers_str)
-        print(additional_number)
-        print(jackpot)
-        print(drawingNr)
-        
-        
-        
+
         # Split the numbers string into individual numbers, convert to integers, and remove any empty values
         numbers = [int(n) for n in numbers_str.split() if n.isdigit()]
 
