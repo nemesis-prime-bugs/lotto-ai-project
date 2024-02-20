@@ -64,10 +64,14 @@ def parse_and_insert_data(conn, year, ocr_text):
 
     matches = re.findall(pattern, ocr_text.replace('\n', ' '))
     matches2 = re.findall(pattern2, ocr_text.replace('\n', ' '))
-
+    
     for match in matches:
         day_of_week, drawing_date, numbers_str, additional_number, jackpot, drawingNr = match
-
+        
+        # Convert drawing_date from DD.MM.YYYY to YYYY-MM-DD format
+        day, month, year = drawing_date.split('.')
+        iso_format_date = f"{year}-{month}-{day}"  # Convert to YYYY-MM-DD format
+        
         # Split the numbers string into individual numbers, convert to integers, and remove any empty values
         numbers = [int(n) for n in numbers_str.split() if n.isdigit()]
 
@@ -75,12 +79,12 @@ def parse_and_insert_data(conn, year, ocr_text):
         jackpot_amount = jackpot.replace(" ", "").replace(",", "").replace(".", "")
 
         # Ensure the drawing date and number don't already exist
-        c.execute("SELECT id FROM date_of_drawing WHERE dateDrawing = ? AND drawingNr = ?", (drawing_date, drawingNr))
+        c.execute("SELECT id FROM date_of_drawing WHERE dateDrawing = ? AND drawingNr = ?", (iso_format_date, drawingNr))
         existing_entry = c.fetchone()
 
         if not existing_entry:
             # Insert the new drawing date and number
-            c.execute("INSERT INTO date_of_drawing (dateDrawing, drawingNr) VALUES (?, ?)", (drawing_date, drawingNr))
+            c.execute("INSERT INTO date_of_drawing (dateDrawing, drawingNr) VALUES (?, ?)", (iso_format_date, drawingNr))
             date_id = c.lastrowid
 
             # Insert the winning numbers, making sure to separate the main numbers from the additional number
@@ -192,7 +196,7 @@ def display_winning_combinations_for_march(conn):
         print("No winning combinations found for March.")
 
 def display_winning_comb(conn):
-    print("in display...")
+    print("in winning comb...")
     c = conn.cursor()
     # Query to join date_of_drawing and winningCombination tables to get March records
     query = """
@@ -208,24 +212,62 @@ def display_winning_comb(conn):
     else:
         print("No winning combinations found for March.")
     
+def display_drawing_date(conn):
+    print("in drwaing date...")
+    c = conn.cursor()
+    # Query to join date_of_drawing and winningCombination tables to get March records
+    query = """
+    SELECT * FROM date_of_drawing
+    """
+    c.execute(query)
+    results = c.fetchall()
+    
+    if results:
+        print("Winning combinations:")
+        for row in results:
+            print(row)
+    else:
+        print("No winning combinations found for March.")
+
+def debug_print_dates(conn):
+    c = conn.cursor()
+    c.execute("SELECT dateDrawing FROM date_of_drawing LIMIT 10")
+    for row in c.fetchall():
+        print(row)
+
 
 
 def main():
+    
+    print('Starting the pytesseractOCR exe...')
+    
     pytesseract.pytesseract.tesseract_cmd = r'D:\TesseractOCR\tesseract.exe'
     base_url = 'https://www.6richtige.at/zahlenarchiv_at_{}.html'
+    
+    print('Find the base image url: ')
     base_image_url = 'https://www.6richtige.at/'
+    print(base_image_url)
 
     start_year = 2022
     end_year = 2022
 
+    print('Initialize the database...')
     conn, _ = initialize_database()
 
+    print('Process the images for year: ' + str(start_year) + ' end year: ' + str(end_year))
+
+    
     for year in range(start_year, end_year + 1):
         process_images_for_year(conn, year, base_url, base_image_url)
 
-    display_winning_combinations_for_march(conn)
+    
+    #display_winning_combinations_for_march(conn)
 
-    display_winning_comb(conn)
+    #display_winning_comb(conn)
+    
+    #display_drawing_date(conn)
+
+    debug_print_dates(conn)
 
     conn.close()
 
