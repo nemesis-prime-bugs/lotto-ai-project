@@ -59,7 +59,7 @@ def parse_and_insert_data(conn, year, ocr_text):
     c = conn.cursor()
     
     # Adjust the regex pattern to correctly capture the groups
-    pattern = r"(So|Mi)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+([\d ]+)\s+(\d+)\s+Jackpot\s+([\d.,]+)\s+.*?\|\s+(\d+)"
+    pattern = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+([\d ]+)\s+(\d+)\s+Jackpot\s+([\d.,]+)\s+.*?\|\s+(\d+)"
     pattern2 = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+((?:\d{2}\s+){6})(\d{2})\s+.*?\|\s+(\d+)"
 
     matches = re.findall(pattern, ocr_text.replace('\n', ' '))
@@ -235,10 +235,7 @@ def debug_print_dates(conn):
     for row in c.fetchall():
         print(row)
 
-
-
-def main():
-    
+def fetch_data_byURL(conn):
     print('Starting the pytesseractOCR exe...')
     
     pytesseract.pytesseract.tesseract_cmd = r'D:\TesseractOCR\tesseract.exe'
@@ -251,23 +248,38 @@ def main():
     start_year = 2022
     end_year = 2022
 
-    print('Initialize the database...')
-    conn, _ = initialize_database()
+    
 
     print('Process the images for year: ' + str(start_year) + ' end year: ' + str(end_year))
 
     
     for year in range(start_year, end_year + 1):
         process_images_for_year(conn, year, base_url, base_image_url)
+        
+    
+    return conn
 
+def main():
+    
+    print('Initialize the database...')
+    conn, _ = initialize_database()
+    
+    # Ask the user if they want to fetch new data
+    fetch_data = input("Do you want to fetch new data? (y/n): ").strip().lower()
+    
+    if fetch_data == 'y':
+        conn = fetch_data_byURL(conn)
     
     #display_winning_combinations_for_march(conn)
 
-    #display_winning_comb(conn)
+    display_winning_comb(conn)
     
     #display_drawing_date(conn)
 
-    debug_print_dates(conn)
+    #debug_print_dates(conn)
+
+    # TODO: OCR_text doesnt recognize 1 - writes either 3 or 4 instead.
+    # TODO: Rerun the queries and check the db if it has all the correct data. 
 
     conn.close()
 
