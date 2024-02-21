@@ -7,6 +7,7 @@ import sqlite3
 import re  # Import the re module for regular expressions
 import cv2
 import numpy as np
+import os
 
 
 # Create Db Schema...
@@ -57,6 +58,8 @@ def initialize_database():
 
 def parse_and_insert_data(conn, year, ocr_text):
     c = conn.cursor()
+    
+    print(ocr_text)
     
     # Adjust the regex pattern to correctly capture the groups
     pattern = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+([\d ]+)\s+(\d+)\s+Jackpot\s+([\d.,]+)\s+.*?\|\s+(\d+)"
@@ -147,6 +150,7 @@ def process_images_for_year(conn, year, base_url, base_image_url):
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, 'html.parser')
         images = soup.find_all('img')
+        image_counter = 1  # Counter to create unique image names
 
         for img in images:
             img_src = img['src']
@@ -158,6 +162,14 @@ def process_images_for_year(conn, year, base_url, base_image_url):
                     # Load and preprocess the image
                     image = Image.open(io.BytesIO(img_response.content))
                     preprocessed_image = preprocess_image(image)
+                    
+                    # Define the base directory and image name
+                    base_dir = "./pictures"  # Adjust the path as needed
+                    image_name = f"processed_image_{year}_{image_counter}.png"
+                    image_counter += 1
+                   
+                    # Save the processed image
+                    save_processed_image(preprocessed_image, base_dir, image_name)
                     
                     # Apply OCR on the preprocessed image
                     extracted_text = pytesseract.image_to_string(preprocessed_image)
@@ -171,6 +183,25 @@ def process_images_for_year(conn, year, base_url, base_image_url):
                     print(f"Failed to download image for year {year}")
     else:
         print(f"Failed to retrieve the webpage for year {year}")
+
+
+def save_processed_image(image, base_dir, image_name):
+    """
+    Saves the processed image to a specified directory with a given name.
+
+    :param image: The PIL Image object to save.
+    :param base_dir: The base directory where the images folder will be created.
+    :param image_name: The name of the image file to save.
+    """
+    # Ensure the base directory exists
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
+
+    # Define the full path for the image
+    image_path = os.path.join(base_dir, image_name)
+
+    # Save the image
+    image.save(image_path)
 
 
 # QUERY THE DB
@@ -213,7 +244,7 @@ def display_winning_comb(conn):
         print("No winning combinations found for March.")
     
 def display_drawing_date(conn):
-    print("in drwaing date...")
+    print("in drawing date...")
     c = conn.cursor()
     # Query to join date_of_drawing and winningCombination tables to get March records
     query = """
@@ -272,7 +303,7 @@ def main():
     
     #display_winning_combinations_for_march(conn)
 
-    display_winning_comb(conn)
+    #display_winning_comb(conn)
     
     #display_drawing_date(conn)
 
