@@ -276,10 +276,9 @@ def fetch_data_byURL(conn):
     base_image_url = 'https://www.6richtige.at/'
     print(base_image_url)
 
-    start_year = 2022
-    end_year = 2022
+    start_year = 1986
+    end_year = 2024
 
-    
 
     print('Process the images for year: ' + str(start_year) + ' end year: ' + str(end_year))
 
