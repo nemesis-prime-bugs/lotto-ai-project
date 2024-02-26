@@ -202,6 +202,7 @@ def process_images_from_directory(conn, directory_path):
             
             # Instead of parse_and_insert_data, directly save to CSV
             extract_to_csv(extracted_text, year, counter, image_name)
+            save_ocr_text_as_txt(extracted_text, year, counter, image_name)
             
             counter += 1  # Increment the counter for each image processed
             
@@ -277,6 +278,7 @@ def process_images_for_year(conn, year, base_url, base_image_url):
                     insert_ocr_result(conn, year, extracted_text)
                     
                     extract_to_csv(extracted_text, year, image_counter, "default")
+                    save_ocr_text_as_txt(extracted_text, year, image_counter, "default")
                     
                     # Parse the OCR text and insert parsed data into related tables
                     parse_and_insert_data(conn, year, extracted_text)
@@ -304,6 +306,10 @@ def save_processed_image(image, base_dir, image_name):
     # Save the image
     image.save(image_path)
 
+def insert_ocr_result(conn, year, ocr_text):
+    c = conn.cursor()
+    c.execute("INSERT INTO ocr_results (year, ocr_text) VALUES (?, ?)", (year, ocr_text))
+    conn.commit()
 
 # QUERY THE DB
 def display_winning_combinations_for_march(conn):
