@@ -8,11 +8,12 @@ import re  # Import the re module for regular expressions
 import cv2
 import numpy as np
 import os
+import csv
 
 
 # Create Db Schema...
 def initialize_database():
-    conn = sqlite3.connect('lottery_ocr_results.db')
+    conn = sqlite3.connect('lottery_ocr_results-test1.db')
     c = conn.cursor()
     # Create tables
     c.execute('''
@@ -56,14 +57,79 @@ def initialize_database():
     conn.commit()
     return conn, c
 
+def extract_to_csv(ocr_text, year, counter, fileName):
+    
+    # Define the directory where you want to save the CSV file
+    directory = 'csv-files'
+    # Ensure the directory exists
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    csv_filename = "initName.csv"
+
+    if(fileName != "default"):
+        fileNameModified = fileName[:-3] + "csv"
+        csv_filename = os.path.join(directory, fileNameModified)
+    else:
+        # Construct the CSV filename with the directory
+        csv_filename = os.path.join(directory, f'processed_image_{year}_{counter}.csv')
+
+    
+    # Define the regex pattern to match the date, winning combination, and drawing number
+    pattern = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+(\d{2}\s+\d{2}\s+\d{2}\s+\d{2}\s+\d{2}\s+\d{2}\s+\d{2})\s+.*?\s+Zieh\.\s+(\d+)"
+    
+    # Open the CSV file for writing
+    with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        # Create a CSV writer object
+        csv_writer = csv.writer(csvfile)
+        # Write the header row
+        csv_writer.writerow(['Datum', 'LOTTO Gewinnzahlen', 'Zz', 'Zieh.'])
+
+        # Find all matches of the pattern in the OCR text
+        matches = re.findall(pattern, ocr_text, re.MULTILINE)
+        
+        for match in matches:
+            day_of_week, date, winning_numbers, drawing_number = match
+            # Remove extra spaces from the winning numbers string
+            winning_numbers_clean = ' '.join(winning_numbers.split())
+            # Write the extracted information to the CSV file
+            csv_writer.writerow([date, winning_numbers_clean, 'Zz', drawing_number])
+
+def save_ocr_text_as_txt(ocr_text, year, counter, fileName):
+    # Define the directory where you want to save the TXT file
+    directory = 'raw-ocr-reading'
+    # Ensure the directory exists
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    txt_filename = "initName.txt"
+
+    if fileName != "default":
+        # Replace the original file extension with .txt
+        fileNameModified = fileName[:-3] + "txt"
+        txt_filename = os.path.join(directory, fileNameModified)
+    else:
+        # Construct the TXT filename with the directory for the default naming convention
+        txt_filename = os.path.join(directory, f'processed_image_{year}_{counter}.txt')
+
+    # Open the TXT file for writing
+    with open(txt_filename, 'w', encoding='utf-8') as txtfile:
+        # Write the OCR text to the file
+        txtfile.write(ocr_text)
+
+    print(f"OCR text has been saved to {txt_filename}.")
+
 def parse_and_insert_data(conn, year, ocr_text):
     c = conn.cursor()
     
     print(ocr_text)
     
     # Adjust the regex pattern to correctly capture the groups
-    pattern = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+([\d ]+)\s+(\d+)\s+Jackpot\s+([\d.,]+)\s+.*?\|\s+(\d+)"
+    pattern1 = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+([\d ]+)\s+(\d+)\s+Jackpot\s+([\d.,]+)\s+.*?\|\s+(\d+)"
     pattern2 = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4})\s+\|\s+((?:\d{2}\s+){6})(\d{2})\s+.*?\|\s+(\d+)"
+
+    pattern = r"(So|Mi|Fr)\s+(\d{2}\.\d{2}\.\d{4}).*?(\d{2}\s+\d{2}\s+\d{2}\s+\d{2}\s+\d{2}\s+\d{2}\s+\d{2}).*?Zieh\.\s+(\d+)"
+  
 
     matches = re.findall(pattern, ocr_text.replace('\n', ' '))
     matches2 = re.findall(pattern2, ocr_text.replace('\n', ' '))
@@ -110,10 +176,43 @@ def parse_and_insert_data(conn, year, ocr_text):
     conn.commit()
 
 
-def insert_ocr_result(conn, year, ocr_text):
-    c = conn.cursor()
-    c.execute("INSERT INTO ocr_results (year, ocr_text) VALUES (?, ?)", (year, ocr_text))
-    conn.commit()
+def process_images_from_directory(conn, directory_path):
+    # Get a list of file names in the specified directory
+    try:
+        image_files = [f for f in os.listdir(directory_path) if f.endswith(('.png'))]
+    except FileNotFoundError:
+        print(f"The directory {directory_path} was not found.")
+
+        return
+    
+    
+    counter = 1  # Initialize a counter for naming CSV files
+    for image_name in image_files:
+        
+        # Construct the full image path
+        image_path = os.path.join(directory_path, image_name)
+        # Open the image file
+        with Image.open(image_path) as image:
+            preprocessed_image = preprocess_image(image)
+            # OCR the image
+            extracted_text = pytesseract.image_to_string(preprocessed_image)
+            # Insert the OCR result into the database
+            year = get_year_from_image_name(image_name)
+            insert_ocr_result(conn, year, extracted_text)
+            
+            # Instead of parse_and_insert_data, directly save to CSV
+            extract_to_csv(extracted_text, year, counter, image_name)
+            
+            counter += 1  # Increment the counter for each image processed
+            
+            # Parse the OCR text and insert parsed data into related tables
+            parse_and_insert_data(conn, year, extracted_text)
+
+def get_year_from_image_name(image_name):
+    # Extract the year from the image name assuming the format is "processed_image_YEAR_NUMBER.png"
+    match = re.search(r"(\d{4})", image_name)
+    return int(match.group(1)) if match else None
+
 
 
 def preprocess_image(image):
@@ -176,6 +275,8 @@ def process_images_for_year(conn, year, base_url, base_image_url):
                     
                     # Save the raw OCR result
                     insert_ocr_result(conn, year, extracted_text)
+                    
+                    extract_to_csv(extracted_text, year, image_counter, "default")
                     
                     # Parse the OCR text and insert parsed data into related tables
                     parse_and_insert_data(conn, year, extracted_text)
@@ -276,8 +377,8 @@ def fetch_data_byURL(conn):
     base_image_url = 'https://www.6richtige.at/'
     print(base_image_url)
 
-    start_year = 1986
-    end_year = 2024
+    start_year = 2022
+    end_year = 2022
 
 
     print('Process the images for year: ' + str(start_year) + ' end year: ' + str(end_year))
@@ -299,7 +400,10 @@ def main():
     
     if fetch_data == 'y':
         conn = fetch_data_byURL(conn)
-    
+    else:
+        process_images_from_directory(conn, './pictures')
+        
+        
     #display_winning_combinations_for_march(conn)
 
     #display_winning_comb(conn)
