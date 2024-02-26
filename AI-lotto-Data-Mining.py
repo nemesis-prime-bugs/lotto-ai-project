@@ -13,7 +13,7 @@ import csv
 
 # Create Db Schema...
 def initialize_database():
-    conn = sqlite3.connect('lottery_ocr_results-test1.db')
+    conn = sqlite3.connect('lottery_ocr_results.db')
     c = conn.cursor()
     # Create tables
     c.execute('''
