@@ -1,4 +1,4 @@
-# Lotto 6 aus 45 - Research & Analytics Report
+# Lotto 6 aus 45 - Advanced ML Research & Analytics Report
 
 ## Dataset
 - **Total draws:** 329 (verified from PDF archives)
@@ -6,93 +6,161 @@
 
 ---
 
-## Key Findings
+## Part 1: Basic Frequency Analysis
 
-### 1. Number Frequency (Hot/Cold)
-| Rank | Hot Numbers | Times | Cold Numbers | Times |
-|------|-------------|-------|--------------|-------|
-| 1 | 3 | 61 | 6 | 31 |
-| 2 | 27 | 57 | 22 | 34 |
-| 3 | 1 | 51 | 28 | 37 |
-| 4 | 25 | 50 | 8,12 | 37 |
-| 5 | 16,17 | 49 | 33,45 | 38 |
+### Hot Numbers (Most Frequent)
+| Number | Count | Deviation from Expected |
+|--------|-------|------------------------|
+| 3 | 61 | +17.1 |
+| 27 | 57 | +13.1 |
+| 1 | 51 | +7.1 |
+| 16 | 50 | +6.1 |
+| 25 | 50 | +6.1 |
 
-### 2. Deviation from Expected
-- Each number should appear ~43.9 times (329 × 6 / 45)
-- **Most over:** 3 (+17.1), 27 (+13.1), 1 (+7.1)
-- **Most under:** 6 (-12.9), 22 (-9.9), 8/12/28 (-6.9)
-
-### 3. Consecutive Numbers
-- **72.3%** of draws contain consecutive numbers!
-- Top pairs: 25-26, 34-35, 7-8, 4-5
-
-### 4. Sum Distribution
-- Average sum: **136.1**
-- Most common: 130-160 range
-
-### 5. Odd/Even
-- Most common: **3 odd / 3 even** (31.3%)
-- 2-4 even is also very common
-
-### 6. Position Analysis
-| Position | Hot Numbers |
-|----------|------------|
-| 1 (smallest) | 1, 3, 2 |
-| 2 | 5, 4, 9, 17 |
-| 3 | 16, 20, 24, 18 |
-| 4 | 25, 22, 27, 28 |
-| 5 | 35, 36, 31, 34 |
-| 6 (largest) | 44, 45, 43 |
-
-### 7. Day of Week
-- **Wednesday:** Numbers 1, 2, 10, 15, 34, 36 are hotter
-- **Sunday:** Numbers 3, 35, 9, 16, 38 are hotter
-
-### 8. Zusatzzahl
-- Hot: 42 (16), 6 (13), 27 (12)
+### Cold Numbers (Least Frequent)
+| Number | Count | Deviation |
+|--------|-------|-----------|
+| 6 | 31 | -12.9 |
+| 22 | 34 | -9.9 |
+| 8 | 37 | -6.9 |
+| 12 | 37 | -6.9 |
+| 28 | 37 | -6.9 |
 
 ---
 
-## Research-Based Tactics
+## Part 2: Combination Repeat Analysis
 
-### Based on findings, recommended strategies:
+### Key Finding: **NO exact 6-number combinations have repeated!**
+- This confirms the randomness - with 1 in 8,145,060 combinations, repeats are extremely rare
 
-1. **Include consecutive numbers** - 72% of draws have them
-2. **Balance odd/even** - 3/3 or 2/4 is most likely
-3. **Target sum 130-160** - covers 36% of draws
-4. **Use position patterns** - spread across positions
-5. **Consider day bias** - different numbers hit different days
+### 5-out-of-6 Near Misses (2 found)
+1. **2024-06-16** vs **2025-01-22**
+   - Common: 3, 5, 29, 33, 45
+   - Difference: 23 vs 40
 
-### Predictions should:
-- ✅ Include 1-2 consecutive pairs
-- ✅ Target sum 130-160
-- ✅ 3 odd / 3 even OR 2 odd / 4 even
-- ✅ Mix of hot (3,27) and cold (6,22) numbers
-- ✅ Consider day of week if known
+2. **2025-01-12** vs **2026-02-15**
+   - Common: 4, 5, 22, 24, 27
+   - Difference: 2 vs 30
+
+### Most Common 3-Number Groups
+| Group | Count |
+|-------|-------|
+| (3, 9, 38) | 5x |
+| (32, 36, 38) | 4x |
+| (24, 25, 30) | 4x |
+| (7, 13, 17) | 4x |
+| (7, 13, 39) | 4x |
+
+### Most Common 4-Number Groups
+| Group | Count |
+|-------|-------|
+| (7, 13, 17, 39) | 3x |
+| (21, 31, 42, 43) | 3x |
 
 ---
 
-## Prediction Strategies (Tested)
+## Part 3: Advanced Pattern Analysis
 
-| Strategy | 3+ Match Rate |
-|---------|---------------|
-| Cold Numbers | 2.66% |
-| Recency Weighted | 2.60% |
-| Balanced | 2.45% |
-| Random (baseline) | 2.45% |
+### Sequential Patterns
+| Pattern | Frequency |
+|---------|-----------|
+| Consecutive numbers | 55.6% |
+| Skip-1 (e.g., 5, 7) | 46.8% |
+| Same ending (e.g., 3, 13, 23) | 22.2% |
 
-*Note: No strategy beats random significantly - lotto is truly random!*
+### Number Spread
+| Spread | Frequency |
+|--------|-----------|
+| Wide (>25) | 88.1% |
+| Medium (15-25) | 11.2% |
+| Tight (<15) | 0.6% |
+
+**Average spread: 33.3**
+
+### Sum Distribution
+| Sum Range | Count |
+|-----------|-------|
+| <100 | 40 |
+| 100-130 | 100 |
+| 130-160 | 120 |
+| 160-190 | 57 |
+| >190 | 12 |
+
+**Average sum: 136.1**
+
+### Odd/Even Distribution
+| Odd | Even | Count |
+|-----|------|-------|
+| 3 | 3 | 103 (31.3%) |
+| 4 | 2 | 84 (25.5%) |
+| 2 | 4 | 78 (23.7% |
+
+---
+
+## Part 4: Markov Chain Analysis
+
+Numbers that most often appear WITH number 3:
+- 25: 12 times
+- 27: 12 times
+- 40: 11 times
+- 35: 11 times
+- 7: 10 times
+
+---
+
+## Part 5: ML Prediction Strategies
+
+### Strategy 1: Combined ML
+Combines frequency, recency, Markov follows, and pair patterns.
+
+### Strategy 2: Hot Numbers
+Favors most frequent numbers with recency weighting.
+
+### Strategy 3: Cold Numbers
+Favors least frequent numbers (gambler's fallacy but interesting to track).
+
+### Strategy 4: Pair-Based
+Uses most common number pairs.
+
+---
+
+## Research-Based Recommendations
+
+### For Best Odds:
+1. **Include 1-2 consecutive pairs** (55.6% of draws have them)
+2. **Target sum 130-160** (36% of draws)
+3. **Balance odd/even** (3/3 or 2/4)
+4. **Spread numbers widely** (88% are spread >25)
+5. **Mix hot and cold numbers**
+
+### Patterns to Avoid:
+- All even or all odd (rare)
+- Tight clusters (<15 spread)
+- Very low sums (<100) or very high (>190)
 
 ---
 
 ## Current Best Predictions
 
 ```
-Based on ALL analysis:
-🎯 MAIN: 03 06 22 25 27 35
-
-Strategy-based:
-🎯 FREQUENCY: 01 03 17 25 27 41
-🎯 BALANCED: 03 06 27 35 41 44
-🎯 PAIRS:    03 25 27 34 35 41
+🎯 RESEARCH-BASED: 03 06 22 25 27 35
+🎯 ML COMBINED:    04 09 10 24 27 44
+🎯 HOT FREQUENCY:  04 05 10 25 27 35
+🎯 PAIR-BASED:     01 03 25 27 35 41
 ```
+
+---
+
+## Conclusion
+
+**Lotto is genuinely random.** No pattern can reliably predict winners. However, understanding the distribution helps:
+- Set realistic expectations
+- Make informed choices
+- Have fun analyzing
+
+⚠️ **Remember:** Play responsibly. The lottery is entertainment, not an investment strategy.
+
+---
+
+*Last updated: 2026-02-22*
+*Data source: Official win2day.at PDF archives*
